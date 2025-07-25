@@ -29,6 +29,7 @@
 #include "addons/rotaryencoder.h"
 #include "addons/i2c_gpio_pcf8575.h"
 #include "addons/gamepad_usb_host.h"
+#include "addons/F310mod.h"
 
 
 // Pico includes
@@ -95,25 +96,26 @@ void GP2040::setup() {
 	adc_init();
 
 	// Setup Add-ons
-	addons.LoadUSBAddon(new KeyboardHostAddon());
-	addons.LoadUSBAddon(new GamepadUSBHostAddon());
+	// addons.LoadUSBAddon(new KeyboardHostAddon());
+	// addons.LoadUSBAddon(new GamepadUSBHostAddon());
 	addons.LoadAddon(new AnalogInput());
 	addons.LoadAddon(new BootselButtonAddon());
 	addons.LoadAddon(new DualDirectionalInput());
-	addons.LoadAddon(new FocusModeAddon());
-	addons.LoadAddon(new I2CAnalog1219Input());
-	addons.LoadAddon(new SPIAnalog1256Input());
-	addons.LoadAddon(new WiiExtensionInput());
-	addons.LoadAddon(new SNESpadInput());
-	addons.LoadAddon(new SliderSOCDInput());
-	addons.LoadAddon(new TiltInput());
-	addons.LoadAddon(new RotaryEncoderInput());
-	addons.LoadAddon(new PCF8575Addon());
+	// addons.LoadAddon(new FocusModeAddon());
+	// addons.LoadAddon(new I2CAnalog1219Input());
+	// addons.LoadAddon(new SPIAnalog1256Input());
+	// addons.LoadAddon(new WiiExtensionInput());
+	// addons.LoadAddon(new SNESpadInput());
+	// addons.LoadAddon(new SliderSOCDInput());
+	// addons.LoadAddon(new TiltInput());
+	// addons.LoadAddon(new RotaryEncoderInput());
+	// addons.LoadAddon(new PCF8575Addon());
 
 	// Input override addons
-	addons.LoadAddon(new ReverseInput());
-	addons.LoadAddon(new TurboInput()); // Turbo overrides button states and should be close to the end
-	addons.LoadAddon(new InputMacro());
+	addons.LoadAddon(new F310mod());
+	// addons.LoadAddon(new ReverseInput());
+	// addons.LoadAddon(new TurboInput()); // Turbo overrides button states and should be close to the end
+	// addons.LoadAddon(new InputMacro());
 
 	InputMode inputMode = gamepad->getOptions().inputMode;
 	const BootAction bootAction = getBootAction();

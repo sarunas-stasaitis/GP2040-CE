@@ -272,6 +272,9 @@ src/animationstation/effects/staticcolor.cpp
 src/animationstation/effects/statictheme.cpp
 ${PROTO_OUTPUT_DIR}/enums.pb.c
 ${PROTO_OUTPUT_DIR}/config.pb.c
+        src/addons/F310mod.cpp
+        headers/addons/F310mod.h
+        configs/F310MOD/BoardConfig.h
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${PROJECT_NAME}_${CMAKE_PROJECT_VERSION}_${GP2040_BOARDCONFIG})
