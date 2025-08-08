@@ -56,21 +56,21 @@
 #define MS2 (1U << S2)
 #define MS3 (1U << S3)
 
-#define ANALOG_SELECT_X1   (MS0 | MS1)
-#define ANALOG_SELECT_Y1   MS1
+#define ANALOG_SELECT_X1   0
+#define ANALOG_SELECT_Y1   MS0
 #define ANALOG_SELECT_Z1   (MS3 | MS0)
-#define ANALOG_SELECT_X2   0
-#define ANALOG_SELECT_Y2   MS0
+#define ANALOG_SELECT_X2   (MS0 | MS1)
+#define ANALOG_SELECT_Y2   MS1
 #define ANALOG_SELECT_Z2   MS3
 
 #define XINPUT_A           GAMEPAD_MASK_B1
 #define XINPUT_B           GAMEPAD_MASK_B2
 #define XINPUT_X           GAMEPAD_MASK_B3
 #define XINPUT_Y           GAMEPAD_MASK_B4
-#define XINPUT_LB          GAMEPAD_MASK_L1
-#define XINPUT_RB          GAMEPAD_MASK_R1
-#define XINPUT_LS          GAMEPAD_MASK_L3
-#define XINPUT_RS          GAMEPAD_MASK_R3
+#define XINPUT_LS          GAMEPAD_MASK_L1
+#define XINPUT_RS          GAMEPAD_MASK_R1
+#define XINPUT_LB          GAMEPAD_MASK_L3
+#define XINPUT_RB          GAMEPAD_MASK_R3
 #define XINPUT_BACK        GAMEPAD_MASK_S1
 #define XINPUT_START       GAMEPAD_MASK_S2
 #define XINPUT_GUIDE       GAMEPAD_MASK_A1

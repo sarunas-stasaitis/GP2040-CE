@@ -75,10 +75,6 @@ void F310mod::process() {
     gpio_set_dir(S3, GPIO_OUT);
 
     updateAnalogs(gamepad);
-
-    if (gpio_get(D2)) {
-        System::reboot(System::BootMode::WEBCONFIG);
-    }
 }
 
 void F310mod::updateButtons(Gamepad *gamepad) {
@@ -92,10 +88,6 @@ void F310mod::updateButtons(Gamepad *gamepad) {
 
     gamepad->state.buttons = buttons;
     gamepad->state.dpad = dpad;
-
-    // if (buttons == (GAMEPAD_MASK_B1 & GAMEPAD_MASK_R1 & GAMEPAD_MASK_S1)) {
-    //     System::reboot(System::BootMode::WEBCONFIG);
-    // }
 }
 
 uint32_t F310mod::getMask(const uint32_t outPin, const uint32_t mask0, const uint32_t mask1, const uint32_t mask2, const uint32_t mask3)  {
@@ -122,27 +114,30 @@ uint32_t F310mod::getMask(const uint32_t outPin, const uint32_t mask0, const uin
     return finalMask;
 }
 
+uint16_t invertAdcValue(const uint16_t adcValue) {
+    return ADC_MAX - adcValue;
+}
 
 void F310mod::updateAnalogs(Gamepad *gamepad) {
     auto &state = gamepad->state;
 
-    selectAnalog(ANALOG_SELECT_X1);  
+    selectAnalog(ANALOG_SELECT_X1);
     state.lx = mapJoystickValue(adc_read());
 
-    selectAnalog(ANALOG_SELECT_Y1);  
-    state.ly = mapJoystickValue(adc_read());
+    selectAnalog(ANALOG_SELECT_Y1);
+    state.ly = mapJoystickValue(invertAdcValue(adc_read()));
 
     selectAnalog(ANALOG_SELECT_Z1);  
     state.lt = mapTriggerValue(adc_read());
 
-    selectAnalog(ANALOG_SELECT_X2);  
-    state.rx = mapJoystickValue(adc_read());
+    selectAnalog(ANALOG_SELECT_X2);
+    state.rx = mapJoystickValue(invertAdcValue(adc_read()));
 
-    selectAnalog(ANALOG_SELECT_Y2);  
+    selectAnalog(ANALOG_SELECT_Y2);
     state.ry = mapJoystickValue(adc_read());
 
     selectAnalog(ANALOG_SELECT_Z2);  
-    state.rt = mapTriggerValue(adc_read());
+    state.rt = mapTriggerValue(invertAdcValue(adc_read()));
 }
 
 void F310mod::selectAnalog(const uint32_t selector) {
