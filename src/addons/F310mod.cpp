@@ -11,8 +11,9 @@
 #include "pico/time.h"
 #include "hardware/gpio.h"
 
+using System::BootMode;
+
 bool F310mod::available() {
-    // Storage::getInstance().getAddonOptions()
     return true;
 }
 
@@ -75,6 +76,8 @@ void F310mod::process() {
     gpio_set_dir(S3, GPIO_OUT);
 
     updateAnalogs(gamepad);
+
+    checkSpecialCombinations(gamepad);
 }
 
 void F310mod::updateButtons(Gamepad *gamepad) {
@@ -115,7 +118,7 @@ uint32_t F310mod::getMask(const uint32_t outPin, const uint32_t mask0, const uin
 }
 
 uint16_t invertAdcValue(const uint16_t adcValue) {
-    return ADC_MAX - adcValue;
+    return static_cast<uint16_t>(ADC_MAX) - adcValue;
 }
 
 void F310mod::updateAnalogs(Gamepad *gamepad) {
@@ -139,6 +142,40 @@ void F310mod::updateAnalogs(Gamepad *gamepad) {
     selectAnalog(ANALOG_SELECT_Z2);  
     state.rt = mapTriggerValue(invertAdcValue(adc_read()));
 }
+
+auto selectingBootMode = BootMode::DEFAULT;
+uint64_t holdStartTime = 0;
+
+
+void F310mod::checkSpecialCombinations(const Gamepad *gamepad) {
+    const auto buttons = gamepad->state.buttons;
+    const auto dpad = gamepad->state.dpad;
+
+    const auto currentBootMode = selectingBootMode;
+
+    if (buttons == SPECIAL_GOTO_BOOTSEL && dpad == XINPUT_DPAD_UP) {
+        if (currentBootMode != BootMode::USB) {
+            selectingBootMode = BootMode::USB;
+            holdStartTime = to_us_since_boot(get_absolute_time());
+        }
+    } else if (buttons == SPECIAL_GOTO_WEBCONFIG) {
+        if (currentBootMode != BootMode::WEBCONFIG) {
+            selectingBootMode = BootMode::WEBCONFIG;
+            holdStartTime = to_us_since_boot(get_absolute_time());
+        }
+    } else {
+        selectingBootMode = BootMode::DEFAULT;
+        return;
+    }
+
+    if (
+        const auto now = to_us_since_boot(get_absolute_time());
+        now - holdStartTime > 5000000
+    ) {
+        System::reboot(selectingBootMode);
+    }
+}
+
 
 void F310mod::selectAnalog(const uint32_t selector) {
     gpio_put_masked(ANALOG_SELECT_MASK, selector);

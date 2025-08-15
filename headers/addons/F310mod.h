@@ -80,6 +80,9 @@
 #define XINPUT_DPAD_LEFT   GAMEPAD_MASK_LEFT
 #define XINPUT_DPAD_RIGHT  GAMEPAD_MASK_RIGHT
 
+#define SPECIAL_GOTO_BOOTSEL (XINPUT_BACK | XINPUT_START)
+#define SPECIAL_GOTO_WEBCONFIG (XINPUT_START | XINPUT_X | XINPUT_Y)
+
 #define F310_MODE_BUTTON   GAMEPAD_MASK_A2
 
 #define F310_BUTTON_NOT_CONNECTED 0
@@ -108,6 +111,8 @@ private:
 
     static uint16_t mapJoystickValue(uint16_t adcValue);
     static uint8_t mapTriggerValue(uint16_t adcValue);
+
+    static void checkSpecialCombinations(const Gamepad *gamepad);
 };
 
 
