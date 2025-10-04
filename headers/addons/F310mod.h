@@ -131,6 +131,11 @@ struct AnalogValues {
     uint16_t x1 = 0, y1 = 0, z1 = 0, x2 = 0, y2 = 0, z2 = 0;
 };
 
+enum TriggerMode {
+    TRIGGER_MODE_ANALOG = 0,
+    TRIGGER_MODE_DIGITAL
+};
+
 class F310mod final : public GPAddon {
 
 public:
@@ -148,6 +153,7 @@ private:
     bool calibrating = false;
     CalibrationState calibrationState;
     AnalogValues analogValues;
+    TriggerMode triggerMode = TRIGGER_MODE_ANALOG;
 
     static void updateButtons(Gamepad *gamepad);
     static uint32_t getMask(uint32_t outPin, uint32_t mask0, uint32_t mask1, uint32_t mask2, uint32_t mask3);
@@ -159,6 +165,7 @@ private:
     static uint16_t mapJoystickValue(uint16_t adcValue, int axisIndex);
     static uint8_t mapTriggerValue(uint16_t adcValue, int axisIndex);
 
+    void checkModeChange(const Gamepad *gamepad);
     void checkSpecialCombinations(const Gamepad *gamepad);
 
     void enterCalibrationMode();

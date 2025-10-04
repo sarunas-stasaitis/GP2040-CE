@@ -786,7 +786,7 @@ void ConfigUtils::initUnsetPropertiesWithDefaults(Config& config)
     INIT_UNSET_PROPERTY(config.addonOptions.f310Options, analogLeftTrigger, true);
     INIT_UNSET_PROPERTY(config.addonOptions.f310Options, digitalLeftTriggerThresholdPercent, 10.0);
     INIT_UNSET_PROPERTY(config.addonOptions.f310Options, analogRightTrigger, true);
-    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, digitalLeftTriggerThresholdPercent, 10.0);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, digitalRightTriggerThresholdPercent, 10.0);
 
     // addonOptions.drv8833RumbleOptions
     INIT_UNSET_PROPERTY(config.addonOptions.drv8833RumbleOptions, enabled, !!DRV8833_RUMBLE_ENABLED);

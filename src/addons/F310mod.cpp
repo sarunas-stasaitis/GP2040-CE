@@ -110,6 +110,7 @@ void F310mod::process() {
     } else {
         updateAnalogs(gamepad);
         checkSpecialCombinations(gamepad);
+        checkModeChange(gamepad);
     }
 }
 
@@ -174,16 +175,46 @@ void F310mod::updateRawAnalogs() {
     analogValues.z2 = invertAdcValue(adc_read());
 }
 
+uint8_t getDigitalTriggerValue(const uint8_t analogValue, const float thresholdPercent) {
+    const auto thresholdValue = static_cast<uint8_t>(thresholdPercent / 100.0f * GAMEPAD_TRIGGER_MAX);
+    return analogValue >= thresholdValue ? GAMEPAD_TRIGGER_MAX : GAMEPAD_TRIGGER_MIN;
+}
+
 void F310mod::updateAnalogs(Gamepad *gamepad) const {
     auto &state = gamepad->state;
 
     state.lx = mapJoystickValue(analogValues.x1, AXIS_X1);
     state.ly = mapJoystickValue(analogValues.y1, AXIS_Y1);
-    state.lt = mapTriggerValue(analogValues.z1, AXIS_Z1);
     state.rx = mapJoystickValue(analogValues.x2, AXIS_X2);
     state.ry = mapJoystickValue(analogValues.y2, AXIS_Y2);
-    state.rt = mapTriggerValue(analogValues.z2, AXIS_Z2);
+
+    const uint8_t z1Mapped = mapTriggerValue(analogValues.z1, AXIS_Z1);
+    const uint8_t z2Mapped = mapTriggerValue(analogValues.z2, AXIS_Z2);
+
+    if (triggerMode == TRIGGER_MODE_ANALOG) {
+        state.lt = z1Mapped;
+        state.rt = z2Mapped;
+    } else {
+        const auto opts = Storage::getInstance().getAddonOptions().f310Options;
+        state.lt = getDigitalTriggerValue(z1Mapped, opts.digitalLeftTriggerThresholdPercent);
+        state.rt = getDigitalTriggerValue(z2Mapped, opts.digitalRightTriggerThresholdPercent);
+    }
 }
+
+static bool modeButtonPrevState = false;
+
+void F310mod::checkModeChange(const Gamepad *gamepad) {
+    const auto buttons = gamepad->state.buttons;
+    const bool modeButtonState = buttons & F310_MODE_BUTTON;
+    if (modeButtonState && modeButtonState != modeButtonPrevState) {
+        triggerMode = triggerMode == TRIGGER_MODE_ANALOG
+            ? TRIGGER_MODE_DIGITAL
+            : TRIGGER_MODE_ANALOG;
+        gpio_put(PIN_STATUS_LED, triggerMode == TRIGGER_MODE_DIGITAL);
+    }
+    modeButtonPrevState = modeButtonState;
+}
+
 
 void F310mod::checkSpecialCombinations(const Gamepad *gamepad) {
     const auto buttons = gamepad->state.buttons;
