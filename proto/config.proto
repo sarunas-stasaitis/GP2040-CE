@@ -873,6 +873,7 @@ message AddonOptions
     optional DRV8833RumbleOptions drv8833RumbleOptions = 26;
     optional ReactiveLEDOptions reactiveLEDOptions = 27;
     optional GamepadUSBHostOptions gamepadUSBHostOptions = 28;
+    optional F310Options f310Options = 29;
 }
 
 message MigrationHistory
@@ -902,4 +903,29 @@ message Config
     optional GpioMappings gpioMappings = 13;
     optional MigrationHistory migrations = 14;
     optional PeripheralOptions peripheralOptions = 15;
+}
+
+message F310Options
+{
+    optional uint32 x1AdcMin = 1;
+    optional uint32 x1AdcMid = 2;
+    optional uint32 x1AdcMax = 3;
+    optional uint32 y1AdcMin = 4;
+    optional uint32 y1AdcMid = 5;
+    optional uint32 y1AdcMax = 6;
+    optional uint32 z1AdcMin = 11;
+    optional uint32 z1AdcMax = 12;
+    optional uint32 x2AdcMin = 13;
+    optional uint32 x2AdcMid = 14;
+    optional uint32 x2AdcMax = 15;
+    optional uint32 y2AdcMin = 16;
+    optional uint32 y2AdcMid = 17;
+    optional uint32 y2AdcMax = 18;
+    optional uint32 z2AdcMin = 19;
+    optional uint32 z2AdcMax = 20;
+
+    optional bool analogLeftTrigger = 21;
+    optional float digitalLeftTriggerThresholdPercent = 22;
+    optional bool analogRightTrigger = 23;
+    optional float digitalRightTriggerThresholdPercent = 24;
 }

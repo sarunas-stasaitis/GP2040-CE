@@ -13,8 +13,24 @@
 
 using System::BootMode;
 
+AnalogRange ranges[AXIS_COUNT];
+
+auto selectingBootMode = MODE_NONE;
+uint64_t holdStartTime = 0;
+
 bool F310mod::available() {
     return true;
+}
+
+void readAxisRanges() {
+    const auto opts = Storage::getInstance().getAddonOptions().f310Options;
+
+    ranges[AXIS_X1] = {opts.x1AdcMin, opts.x1AdcMid, opts.x1AdcMax};
+    ranges[AXIS_Y1] = {opts.y1AdcMin, opts.y1AdcMid, opts.y1AdcMax};
+    ranges[AXIS_Z1] = {opts.z1AdcMin, opts.z1AdcMax};
+    ranges[AXIS_X2] = {opts.x2AdcMin, opts.x2AdcMid, opts.x2AdcMax};
+    ranges[AXIS_Y2] = {opts.y2AdcMin, opts.y2AdcMid, opts.y2AdcMax};
+    ranges[AXIS_Z2] = {opts.z2AdcMin, opts.z2AdcMax};
 }
 
 void F310mod::setup() {
@@ -22,6 +38,8 @@ void F310mod::setup() {
     gamepad->hasAnalogTriggers = true;
     gamepad->hasLeftAnalogStick = true;
     gamepad->hasRightAnalogStick = true;
+
+    readAxisRanges();
 
     gpio_init(PIN_M_OUT_0);
     gpio_init(PIN_M_OUT_1);
@@ -48,9 +66,9 @@ void F310mod::setup() {
     gpio_put(PIN_M_OUT_2, false);
     gpio_put(PIN_M_OUT_3, false);
 
-    gpio_init(D2);
-    gpio_set_dir(D2, GPIO_IN);
-    gpio_pull_down(D2);
+    gpio_init(PIN_STATUS_LED);
+    gpio_set_dir(PIN_STATUS_LED, GPIO_OUT);
+    gpio_put(PIN_STATUS_LED, false);
 
     adc_init();
     adc_gpio_init(PIN_ANALOG_IN);
@@ -75,9 +93,24 @@ void F310mod::process() {
     gpio_set_dir(S2, GPIO_OUT);
     gpio_set_dir(S3, GPIO_OUT);
 
-    updateAnalogs(gamepad);
+    updateRawAnalogs();
 
-    checkSpecialCombinations(gamepad);
+    if (calibrating) {
+        if (
+            const auto buttons = gamepad->state.buttons;
+            buttons == XINPUT_X
+        ) {
+            commitCalibration();
+        } else if (buttons == XINPUT_B) {
+            calibrating = false;
+        }
+
+        updateCalibrationData();
+
+    } else {
+        updateAnalogs(gamepad);
+        checkSpecialCombinations(gamepad);
+    }
 }
 
 void F310mod::updateButtons(Gamepad *gamepad) {
@@ -121,50 +154,60 @@ uint16_t invertAdcValue(const uint16_t adcValue) {
     return static_cast<uint16_t>(ADC_MAX) - adcValue;
 }
 
-void F310mod::updateAnalogs(Gamepad *gamepad) {
-    auto &state = gamepad->state;
-
+void F310mod::updateRawAnalogs() {
     selectAnalog(ANALOG_SELECT_X1);
-    state.lx = mapJoystickValue(adc_read());
+    analogValues.x1 = adc_read();
 
     selectAnalog(ANALOG_SELECT_Y1);
-    state.ly = mapJoystickValue(invertAdcValue(adc_read()));
+    analogValues.y1 = invertAdcValue(adc_read());
 
-    selectAnalog(ANALOG_SELECT_Z1);  
-    state.lt = mapTriggerValue(adc_read());
+    selectAnalog(ANALOG_SELECT_Z1);
+    analogValues.z1 = adc_read();
 
     selectAnalog(ANALOG_SELECT_X2);
-    state.rx = mapJoystickValue(invertAdcValue(adc_read()));
+    analogValues.x2 = invertAdcValue(adc_read());
 
     selectAnalog(ANALOG_SELECT_Y2);
-    state.ry = mapJoystickValue(adc_read());
+    analogValues.y2 = adc_read();
 
-    selectAnalog(ANALOG_SELECT_Z2);  
-    state.rt = mapTriggerValue(invertAdcValue(adc_read()));
+    selectAnalog(ANALOG_SELECT_Z2);
+    analogValues.z2 = invertAdcValue(adc_read());
 }
 
-auto selectingBootMode = BootMode::DEFAULT;
-uint64_t holdStartTime = 0;
+void F310mod::updateAnalogs(Gamepad *gamepad) const {
+    auto &state = gamepad->state;
 
+    state.lx = mapJoystickValue(analogValues.x1, AXIS_X1);
+    state.ly = mapJoystickValue(analogValues.y1, AXIS_Y1);
+    state.lt = mapTriggerValue(analogValues.z1, AXIS_Z1);
+    state.rx = mapJoystickValue(analogValues.x2, AXIS_X2);
+    state.ry = mapJoystickValue(analogValues.y2, AXIS_Y2);
+    state.rt = mapTriggerValue(analogValues.z2, AXIS_Z2);
+}
 
 void F310mod::checkSpecialCombinations(const Gamepad *gamepad) {
     const auto buttons = gamepad->state.buttons;
     const auto dpad = gamepad->state.dpad;
 
-    const auto currentBootMode = selectingBootMode;
+    const auto currentSpecialMode = selectingBootMode;
 
-    if (buttons == SPECIAL_GOTO_BOOTSEL && dpad == XINPUT_DPAD_UP) {
-        if (currentBootMode != BootMode::USB) {
-            selectingBootMode = BootMode::USB;
+    if (buttons == SPECIAL_REBOOT_BOOTSEL && dpad == XINPUT_DPAD_UP) {
+        if (currentSpecialMode != MODE_REBOOT_BOOTSEL) {
+            selectingBootMode = MODE_REBOOT_BOOTSEL;
             holdStartTime = to_us_since_boot(get_absolute_time());
         }
-    } else if (buttons == SPECIAL_GOTO_WEBCONFIG) {
-        if (currentBootMode != BootMode::WEBCONFIG) {
-            selectingBootMode = BootMode::WEBCONFIG;
+    } else if (buttons == SPECIAL_REBOOT_WEBCONFIG) {
+        if (currentSpecialMode != MODE_REBOOT_WEBCONFIG) {
+            selectingBootMode = MODE_REBOOT_WEBCONFIG;
+            holdStartTime = to_us_since_boot(get_absolute_time());
+        }
+    } else if (buttons == SPECIAL_BEGIN_CALIBRATION) {
+        if (currentSpecialMode != MODE_BEGIN_CALIBRATION) {
+            selectingBootMode = MODE_BEGIN_CALIBRATION;
             holdStartTime = to_us_since_boot(get_absolute_time());
         }
     } else {
-        selectingBootMode = BootMode::DEFAULT;
+        selectingBootMode = MODE_NONE;
         return;
     }
 
@@ -172,7 +215,19 @@ void F310mod::checkSpecialCombinations(const Gamepad *gamepad) {
         const auto now = to_us_since_boot(get_absolute_time());
         now - holdStartTime > 5000000
     ) {
-        System::reboot(selectingBootMode);
+        switch (currentSpecialMode) {
+            case MODE_REBOOT_BOOTSEL:
+                System::reboot(BootMode::USB);
+                break;
+            case MODE_REBOOT_WEBCONFIG:
+                System::reboot(BootMode::WEBCONFIG);
+                break;
+            case MODE_BEGIN_CALIBRATION:
+                enterCalibrationMode();
+                break;
+            default:
+                return;
+        }
     }
 }
 
@@ -181,12 +236,78 @@ void F310mod::selectAnalog(const uint32_t selector) {
     gpio_put_masked(ANALOG_SELECT_MASK, selector);
 }
 
-uint16_t F310mod::mapJoystickValue(const uint16_t adcValue) {
-    const float normalizedValue = static_cast<float>(adcValue) / ADC_MAX;
-    return static_cast<uint16_t>(normalizedValue * GAMEPAD_JOYSTICK_MAX);
+float mapRange(const float value, const float inMin, const float inMax, const float outMin, const float outMax) {
+    return (value - inMin) / (inMax - inMin) * (outMax - outMin) + outMin;
 }
 
-uint8_t F310mod::mapTriggerValue(const uint16_t adcValue) {
-    const float normalizedValue = static_cast<float>(adcValue) / ADC_MAX;
-    return static_cast<uint8_t>(normalizedValue * GAMEPAD_TRIGGER_MAX);
+uint16_t F310mod::mapJoystickValue(const uint16_t adcValue, const int axisIndex) {
+    const auto range = ranges[axisIndex];
+    const auto normalizedAdcValue = static_cast<float>(adcValue) / ADC_MAX;
+    const float normalizedValue = adcValue < ADC_MIDI
+        ? mapRange(normalizedAdcValue, range.minNormalized, range.midNormalized, 0.0f, 0.5f)
+        : mapRange(normalizedAdcValue, range.midNormalized, range.maxNormalized, 0.5f, 1.0f);
+    const float clampedValue = std::max(0.0f, std::min(1.0f, normalizedValue));
+    return static_cast<uint16_t>(clampedValue * GAMEPAD_JOYSTICK_MAX);
+}
+
+uint8_t F310mod::mapTriggerValue(const uint16_t adcValue, const int axisIndex) {
+    const auto range = ranges[axisIndex];
+    const auto normalizedAdcValue = static_cast<float>(adcValue) / ADC_MAX;
+    const auto normalizedValue = mapRange(normalizedAdcValue, range.minNormalized, range.maxNormalized, 0.0f, 1.0f);
+    const float clampedValue = std::max(0.0f, std::min(1.0f, normalizedValue));
+    return static_cast<uint16_t>(clampedValue * GAMEPAD_TRIGGER_MAX);
+
+}
+
+void F310mod::enterCalibrationMode() {
+    calibrating = true;
+    calibrationState.reset();
+}
+
+
+void F310mod::updateCalibrationData() {
+    calibrationState.x1.min = std::min(calibrationState.x1.min, analogValues.x1);
+    calibrationState.x1.max = std::max(calibrationState.x1.max, analogValues.x1);
+    calibrationState.y1.min = std::min(calibrationState.y1.min, analogValues.y1);
+    calibrationState.y1.max = std::max(calibrationState.y1.max, analogValues.y1);
+    calibrationState.z1.min = std::min(calibrationState.z1.min, analogValues.z1);
+    calibrationState.z1.max = std::max(calibrationState.z1.max, analogValues.z1);
+    calibrationState.x2.min = std::min(calibrationState.x2.min, analogValues.x2);
+    calibrationState.x2.max = std::max(calibrationState.x2.max, analogValues.x2);
+    calibrationState.y2.min = std::min(calibrationState.y2.min, analogValues.y2);
+    calibrationState.y2.max = std::max(calibrationState.y2.max, analogValues.y2);
+    calibrationState.z2.min = std::min(calibrationState.z2.min, analogValues.z2);
+    calibrationState.z2.max = std::max(calibrationState.z2.max, analogValues.z2);
+}
+
+void F310mod::commitCalibration() {
+    // Get the storage instance
+    Storage& storage = Storage::getInstance();
+
+    // Get the current addon options (this should return a mutable reference)
+    auto& addonOptions = storage.getAddonOptions();
+    auto& f310Options = addonOptions.f310Options;
+
+    // Update the calibration values
+    f310Options.x1AdcMin = static_cast<uint32_t>(calibrationState.x1.min);
+    f310Options.x1AdcMax = static_cast<uint32_t>(calibrationState.x1.max);
+    f310Options.y1AdcMin = static_cast<uint32_t>(calibrationState.y1.min);
+    f310Options.y1AdcMax = static_cast<uint32_t>(calibrationState.y1.max);
+    f310Options.z1AdcMin = static_cast<uint32_t>(calibrationState.z1.min);
+    f310Options.z1AdcMax = static_cast<uint32_t>(calibrationState.z1.max);
+    f310Options.x2AdcMin = static_cast<uint32_t>(calibrationState.x2.min);
+    f310Options.x2AdcMax = static_cast<uint32_t>(calibrationState.x2.max);
+    f310Options.y2AdcMin = static_cast<uint32_t>(calibrationState.y2.min);
+    f310Options.y2AdcMax = static_cast<uint32_t>(calibrationState.y2.max);
+    f310Options.z2AdcMin = static_cast<uint32_t>(calibrationState.z2.min);
+    f310Options.z2AdcMax = static_cast<uint32_t>(calibrationState.z2.max);
+
+    // Save the updated options to persistent storage
+    storage.save();
+
+    // Update the local ranges with the new values
+    readAxisRanges();
+
+    // Exit calibration mode
+    calibrating = false;
 }

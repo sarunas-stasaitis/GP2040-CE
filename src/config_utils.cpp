@@ -34,6 +34,7 @@
 #include "addons/i2c_gpio_pcf8575.h"
 #include "addons/drv8833_rumble.h"
 #include "addons/gamepad_usb_host.h"
+#include "addons/F310mod.h"
 
 #include "CRC32.h"
 #include "FlashPROM.h"
@@ -763,6 +764,29 @@ void ConfigUtils::initUnsetPropertiesWithDefaults(Config& config)
     }
     // reminder that this must be set or else nanopb won't retain anything
     config.addonOptions.pcf8575Options.pins_count = PCF8575_PIN_COUNT;
+
+    // addonOptions.f310Options
+
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, x1AdcMin, ADC_MINI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, x1AdcMid, ADC_MIDI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, x1AdcMax, ADC_MAXI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, y1AdcMin, ADC_MINI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, y1AdcMid, ADC_MIDI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, y1AdcMax, ADC_MAXI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, z1AdcMin, ADC_MINI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, z1AdcMax, ADC_MAXI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, x2AdcMin, ADC_MINI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, x2AdcMid, ADC_MIDI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, x2AdcMax, ADC_MAXI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, y2AdcMin, ADC_MINI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, y2AdcMid, ADC_MIDI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, y2AdcMax, ADC_MAXI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, z2AdcMin, ADC_MINI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, z2AdcMax, ADC_MAXI);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, analogLeftTrigger, true);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, digitalLeftTriggerThresholdPercent, 10.0);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, analogRightTrigger, true);
+    INIT_UNSET_PROPERTY(config.addonOptions.f310Options, digitalLeftTriggerThresholdPercent, 10.0);
 
     // addonOptions.drv8833RumbleOptions
     INIT_UNSET_PROPERTY(config.addonOptions.drv8833RumbleOptions, enabled, !!DRV8833_RUMBLE_ENABLED);

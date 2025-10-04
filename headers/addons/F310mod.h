@@ -32,6 +32,8 @@
 
 #define A0 D0
 
+#define PIN_STATUS_LED D2
+
 #define PIN_M_OUT_0 D3
 #define PIN_M_OUT_1 D4
 #define PIN_M_OUT_2 D5
@@ -63,6 +65,14 @@
 #define ANALOG_SELECT_Y2   MS1
 #define ANALOG_SELECT_Z2   MS3
 
+#define AXIS_X1 0
+#define AXIS_Y1 1
+#define AXIS_Z1 2
+#define AXIS_X2 3
+#define AXIS_Y2 4
+#define AXIS_Z2 5
+#define AXIS_COUNT 6
+
 #define XINPUT_A           GAMEPAD_MASK_B1
 #define XINPUT_B           GAMEPAD_MASK_B2
 #define XINPUT_X           GAMEPAD_MASK_B3
@@ -80,8 +90,9 @@
 #define XINPUT_DPAD_LEFT   GAMEPAD_MASK_LEFT
 #define XINPUT_DPAD_RIGHT  GAMEPAD_MASK_RIGHT
 
-#define SPECIAL_GOTO_BOOTSEL (XINPUT_BACK | XINPUT_START)
-#define SPECIAL_GOTO_WEBCONFIG (XINPUT_START | XINPUT_X | XINPUT_Y)
+#define SPECIAL_REBOOT_BOOTSEL (XINPUT_BACK | XINPUT_START)
+#define SPECIAL_REBOOT_WEBCONFIG (XINPUT_START | XINPUT_X | XINPUT_Y)
+#define SPECIAL_BEGIN_CALIBRATION (XINPUT_START | XINPUT_Y | XINPUT_B)
 
 #define F310_MODE_BUTTON   GAMEPAD_MASK_A2
 
@@ -89,7 +100,38 @@
 
 #define ADC_MAX 4095.0f
 
-class F310mod : public GPAddon {
+#define ADC_MINI 0
+#define ADC_MIDI 2047
+#define ADC_MAXI 4095
+
+
+struct RawRange {
+    uint16_t min, max;
+};
+
+struct CalibrationState {
+    RawRange x1 = {ADC_MAXI, 0};
+    RawRange y1 = {ADC_MAXI, 0};
+    RawRange z1 = {ADC_MAXI, 0};
+    RawRange x2 = {ADC_MAXI, 0};
+    RawRange y2 = {ADC_MAXI, 0};
+    RawRange z2 = {ADC_MAXI, 0};
+
+    void reset() {
+        x1 = {ADC_MAXI, 0};
+        y1 = {ADC_MAXI, 0};
+        z1 = {ADC_MAXI, 0};
+        x2 = {ADC_MAXI, 0};
+        y2 = {ADC_MAXI, 0};
+        z2 = {ADC_MAXI, 0};
+    }
+};
+
+struct AnalogValues {
+    uint16_t x1 = 0, y1 = 0, z1 = 0, x2 = 0, y2 = 0, z2 = 0;
+};
+
+class F310mod final : public GPAddon {
 
 public:
     virtual void bootProcess() {}
@@ -103,18 +145,62 @@ public:
     virtual std::string name() { return AddonName; }
 
 private:
+    bool calibrating = false;
+    CalibrationState calibrationState;
+    AnalogValues analogValues;
+
     static void updateButtons(Gamepad *gamepad);
     static uint32_t getMask(uint32_t outPin, uint32_t mask0, uint32_t mask1, uint32_t mask2, uint32_t mask3);
 
-    static void updateAnalogs(Gamepad *gamepad);
+    void updateRawAnalogs();
+    void updateAnalogs(Gamepad *gamepad) const;
     static void selectAnalog(uint32_t selector);
 
-    static uint16_t mapJoystickValue(uint16_t adcValue);
-    static uint8_t mapTriggerValue(uint16_t adcValue);
+    static uint16_t mapJoystickValue(uint16_t adcValue, int axisIndex);
+    static uint8_t mapTriggerValue(uint16_t adcValue, int axisIndex);
 
-    static void checkSpecialCombinations(const Gamepad *gamepad);
+    void checkSpecialCombinations(const Gamepad *gamepad);
+
+    void enterCalibrationMode();
+    void updateCalibrationData();
+    void commitCalibration();
 };
 
+enum SpecialMode {
+    MODE_NONE = 0,
+    MODE_REBOOT_BOOTSEL,
+    MODE_REBOOT_WEBCONFIG,
+    MODE_BEGIN_CALIBRATION
+};
 
+struct AnalogRange {
+    float minNormalized;
+    float midNormalized;
+    float maxNormalized;
+
+    AnalogRange() :
+        minNormalized(0.0f), midNormalized(0.5f), maxNormalized(1.0f) {}
+
+    AnalogRange(const uint16_t minRaw, const uint16_t maxRaw) :
+        minNormalized(static_cast<float>(minRaw) / ADC_MAX),
+        midNormalized(0.5f),
+        maxNormalized(static_cast<float>(maxRaw) / ADC_MAX) {}
+
+    AnalogRange(const uint16_t minRaw, const uint16_t midRaw, const uint16_t maxRaw) :
+        minNormalized(static_cast<float>(minRaw) / ADC_MAX),
+        midNormalized(static_cast<float>(midRaw) / ADC_MAX),
+        maxNormalized(static_cast<float>(maxRaw) / ADC_MAX) {}
+
+    AnalogRange(const uint32_t minRaw, const uint32_t maxRaw) :
+        minNormalized(static_cast<float>(minRaw) / ADC_MAX),
+        midNormalized(0.5f),
+        maxNormalized(static_cast<float>(maxRaw) / ADC_MAX) {}
+
+    AnalogRange(const uint32_t minRaw, const uint32_t midRaw, const uint32_t maxRaw) :
+        minNormalized(static_cast<float>(minRaw) / ADC_MAX),
+        midNormalized(static_cast<float>(midRaw) / ADC_MAX),
+        maxNormalized(static_cast<float>(maxRaw) / ADC_MAX) {}
+
+};
 
 #endif //F310MOD_H
