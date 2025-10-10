@@ -37,7 +37,7 @@
 
 extern struct fsdata_file file__index_html[];
 
-const static char* spaPaths[] = { "/backup", "/display-config", "/led-config", "/pin-mapping", "/settings", "/reset-settings", "/add-ons", "/custom-theme", "/macro", "/peripheral-mapping" };
+const static char* spaPaths[] = { "/backup", "/display-config", "/led-config", "/pin-mapping", "/settings", "/reset-settings", "/add-ons", "/custom-theme", "/macro", "/peripheral-mapping", "/f310mod" };
 const static char* excludePaths[] = { "/css", "/images", "/js", "/static" };
 const static uint32_t rebootDelayMs = 500;
 static string http_post_uri;
@@ -400,7 +400,7 @@ void addUsedPinsArray(DynamicJsonDocument& doc)
     }
 }
 
-std::string serialize_json(DynamicJsonDocument &doc)
+std::string serialize_json(const DynamicJsonDocument &doc)
 {
     std::string data;
     serializeJson(doc, data);
@@ -2292,6 +2292,73 @@ std::string abortGetHeldPins()
     return {};
 }
 
+std::string getF310Config() {
+    const auto opts = Storage::getInstance().getConfig().addonOptions.f310Options;
+
+    constexpr size_t capacity = JSON_OBJECT_SIZE(24);
+    DynamicJsonDocument doc(capacity);
+
+    doc["x1AdcMin"] = opts.x1AdcMin;
+    doc["x1AdcMid"] = opts.x1AdcMid;
+    doc["x1AdcMax"] = opts.x1AdcMax;
+    doc["y1AdcMin"] = opts.y1AdcMin;
+    doc["y1AdcMid"] = opts.y1AdcMid;
+    doc["y1AdcMax"] = opts.y1AdcMax;
+    doc["z1AdcMin"] = opts.z1AdcMin;
+    doc["z1AdcMax"] = opts.z1AdcMax;
+    doc["x2AdcMin"] = opts.x2AdcMin;
+    doc["x2AdcMid"] = opts.x2AdcMid;
+    doc["x2AdcMax"] = opts.x2AdcMax;
+    doc["y2AdcMin"] = opts.y2AdcMin;
+    doc["y2AdcMid"] = opts.y2AdcMid;
+    doc["y2AdcMax"] = opts.y2AdcMax;
+    doc["z2AdcMin"] = opts.z2AdcMin;
+    doc["z2AdcMax"] = opts.z2AdcMax;
+    doc["analogLeftTrigger"] = opts.analogLeftTrigger;
+    doc["digitalLeftTriggerThresholdPercent"] = opts.digitalLeftTriggerThresholdPercent;
+    doc["analogRightTrigger"] = opts.analogRightTrigger;
+    doc["digitalRightTriggerThresholdPercent"] = opts.digitalRightTriggerThresholdPercent;
+
+    return serialize_json(doc);
+}
+
+std::string setF310Config() {
+    DynamicJsonDocument doc = get_post_data();
+
+
+    // Get the storage instance
+    Storage& storage = Storage::getInstance();
+
+    // Get the current addon options (this should return a mutable reference)
+    auto& addonOptions = storage.getAddonOptions();
+    auto& f310Options = addonOptions.f310Options;
+
+    f310Options.x1AdcMin = doc["x1AdcMin"];
+    f310Options.x1AdcMid = doc["x1AdcMid"];
+    f310Options.x1AdcMax = doc["x1AdcMax"];
+    f310Options.y1AdcMin = doc["y1AdcMin"];
+    f310Options.y1AdcMid = doc["y1AdcMid"];
+    f310Options.y1AdcMax = doc["y1AdcMax"];
+    f310Options.z1AdcMin = doc["z1AdcMin"];
+    f310Options.z1AdcMax = doc["z1AdcMax"];
+    f310Options.x2AdcMin = doc["x2AdcMin"];
+    f310Options.x2AdcMid = doc["x2AdcMid"];
+    f310Options.x2AdcMax = doc["x2AdcMax"];
+    f310Options.y2AdcMin = doc["y2AdcMin"];
+    f310Options.y2AdcMid = doc["y2AdcMid"];
+    f310Options.y2AdcMax = doc["y2AdcMax"];
+    f310Options.z2AdcMin = doc["z2AdcMin"];
+    f310Options.z2AdcMax = doc["z2AdcMax"];
+    // f310Options.analogLeftTrigger = doc["analogLeftTrigger"];
+    f310Options.digitalLeftTriggerThresholdPercent = doc["digitalLeftTriggerThresholdPercent"];
+    // f310Options.analogRightTrigger = doc["analogRightTrigger"];
+    f310Options.digitalRightTriggerThresholdPercent = doc["digitalRightTriggerThresholdPercent"];
+
+    storage.save();
+
+    return "\"OK\"";
+}
+
 std::string getConfig()
 {
     return ConfigUtils::toJSON(Storage::getInstance().getConfig());
@@ -2406,6 +2473,9 @@ static const std::pair<const char*, HandlerFuncPtr> handlerFuncs[] =
     { "/api/abortGetHeldPins", abortGetHeldPins },
     { "/api/getUsedPins", getUsedPins },
     { "/api/getConfig", getConfig },
+
+    {"/api/getF310Config", getF310Config},
+    {"/api/setF310Config", setF310Config}
 #if !defined(NDEBUG)
     { "/api/echo", echo },
 #endif

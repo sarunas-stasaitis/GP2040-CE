@@ -132,6 +132,9 @@ const Navigation = () => {
 							{t('Navigation:github-label')}
 						</NavDropdown.Item>
 					</NavDropdown>
+					<Nav.Link as={NavLink} to="/f310mod" eventKey={eventKey++}>
+						{'F310 Mod'}
+					</Nav.Link>
 				</Nav>
 				<Nav className="navbar-actions">
 					<Button variant="success" onClick={handleShow}>

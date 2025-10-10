@@ -18,6 +18,7 @@ import PlaygroundPage from './Pages/PlaygroundPage';
 import InputMacroAddonPage from './Pages/InputMacroAddonPage';
 
 import './App.scss';
+import F310ModConfig from "./Pages/F310ModConfig";
 
 const App = () => {
 	return (
@@ -41,6 +42,8 @@ const App = () => {
 						<Route path="/backup" element={<BackupPage />} />
 						<Route path="/playground" element={<PlaygroundPage />} />
 						<Route path="/macro" element={<InputMacroAddonPage />} />
+
+						<Route path="/f310mod" element={<F310ModConfig/>} />
 					</Routes>
 				</div>
 			</Router>
