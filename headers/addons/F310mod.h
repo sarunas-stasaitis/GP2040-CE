@@ -73,6 +73,8 @@
 #define AXIS_Z2 5
 #define AXIS_COUNT 6
 
+#define BUTTON_COUNT 20
+
 #define XINPUT_A           GAMEPAD_MASK_B1
 #define XINPUT_B           GAMEPAD_MASK_B2
 #define XINPUT_X           GAMEPAD_MASK_B3
@@ -155,8 +157,12 @@ private:
     AnalogValues analogValues;
     TriggerMode triggerMode = TRIGGER_MODE_ANALOG;
 
-    static void updateButtons(Gamepad *gamepad);
+    uint32_t debouncedState = 0;
+    uint32_t debounceTime[BUTTON_COUNT] = {};
+
+    void updateButtons(Gamepad *gamepad);
     static uint32_t getMask(uint32_t outPin, uint32_t mask0, uint32_t mask1, uint32_t mask2, uint32_t mask3);
+    uint32_t debounce(uint32_t newState);
 
     void updateRawAnalogs();
     void updateAnalogs(Gamepad *gamepad) const;

@@ -123,9 +123,38 @@ void F310mod::updateButtons(Gamepad *gamepad) {
     buttons |= getMask(PIN_M_OUT_2,  XINPUT_RB, XINPUT_LB, XINPUT_RS, XINPUT_LS);
     buttons |= getMask(PIN_M_OUT_3,  F310_BUTTON_NOT_CONNECTED, XINPUT_BACK, XINPUT_GUIDE, F310_MODE_BUTTON);
 
-    gamepad->state.buttons = buttons;
-    gamepad->state.dpad = dpad;
+    const auto debounced = debounce(buttons | (dpad << 16));
+    gamepad->state.buttons = debounced & 0xFFFF;
+    gamepad->state.dpad = (debounced >> 16) & 0x0F;
 }
+
+uint32_t F310mod::debounce(const uint32_t newState) {
+    if (newState == debouncedState) {
+        return newState;
+    }
+
+    const uint32_t debounceDelay = Storage::getInstance().getGamepadOptions().debounceDelay;
+    if (debounceDelay == 0) {
+        return newState;
+    }
+
+    const uint32_t now = getMillis();
+
+    // check each button use case GPIO for state
+    for (uint32_t btn = 0; btn < BUTTON_COUNT; btn++) {
+        // Allow debouncer to change state if button state changed and debounce delay threshold met
+        if (
+            const auto pin_mask = 1 << btn;
+            (debouncedState & pin_mask) != (newState & pin_mask) && ((now - debounceTime[btn]) > debounceDelay)
+        ) {
+            debouncedState ^= pin_mask;
+            debounceTime[btn] = now;
+        }
+    }
+
+    return debouncedState;
+}
+
 
 uint32_t F310mod::getMask(const uint32_t outPin, const uint32_t mask0, const uint32_t mask1, const uint32_t mask2, const uint32_t mask3)  {
     uint32_t finalMask = 0;
