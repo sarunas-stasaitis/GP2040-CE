@@ -120,7 +120,7 @@ void F310mod::updateButtons(Gamepad *gamepad) {
 
     buttons |= getMask(PIN_M_OUT_0,  XINPUT_A, XINPUT_B, XINPUT_X, XINPUT_Y);
     dpad |= getMask(PIN_M_OUT_1,  XINPUT_DPAD_LEFT, XINPUT_DPAD_UP, XINPUT_DPAD_RIGHT, XINPUT_DPAD_DOWN);
-    buttons |= getMask(PIN_M_OUT_2,  XINPUT_RB, XINPUT_LB, XINPUT_RS, XINPUT_LS);
+    buttons |= getMask(PIN_M_OUT_2,  XINPUT_RS, XINPUT_LS, XINPUT_RB, XINPUT_LB);
     buttons |= getMask(PIN_M_OUT_3,  F310_BUTTON_NOT_CONNECTED, XINPUT_BACK, XINPUT_GUIDE, F310_MODE_BUTTON);
 
     const auto debounced = debounce(buttons | (dpad << 16));

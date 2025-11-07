@@ -79,10 +79,12 @@
 #define XINPUT_B           GAMEPAD_MASK_B2
 #define XINPUT_X           GAMEPAD_MASK_B3
 #define XINPUT_Y           GAMEPAD_MASK_B4
-#define XINPUT_LS          GAMEPAD_MASK_L1
-#define XINPUT_RS          GAMEPAD_MASK_R1
-#define XINPUT_LB          GAMEPAD_MASK_L3
-#define XINPUT_RB          GAMEPAD_MASK_R3
+
+#define XINPUT_LS          GAMEPAD_MASK_R3
+//neįsivaizduoju kodėl čia R ir L sumaišyta
+#define XINPUT_RS          GAMEPAD_MASK_L3
+#define XINPUT_LB          GAMEPAD_MASK_L1
+#define XINPUT_RB          GAMEPAD_MASK_R1
 #define XINPUT_BACK        GAMEPAD_MASK_S1
 #define XINPUT_START       GAMEPAD_MASK_S2
 #define XINPUT_GUIDE       GAMEPAD_MASK_A1
